@@ -8,6 +8,7 @@ use futures::{
     future::{join_all, JoinAll},
     stream::StreamExt,
 };
+use headers::HeaderMap;
 use jsonrpc_core as rpc;
 use std::{
     collections::BTreeMap,
@@ -63,7 +64,7 @@ impl Transport for Ipc {
         (id, request)
     }
 
-    fn send(&self, id: RequestId, call: rpc::Call) -> Self::Out {
+    fn send(&self, id: RequestId, call: rpc::Call, _headers: Option<HeaderMap>) -> Self::Out {
         let (response_tx, response_rx) = oneshot::channel();
         let message = TransportMessage::Single((id, call, response_tx));
 
@@ -356,7 +357,7 @@ mod test {
                 "test": -1,
             })],
         );
-        let response = ipc.send(req_id, request).await;
+        let response = ipc.send(req_id, request, None).await;
         let expected_response_json: serde_json::Value = json!({
             "test": 1,
         });
@@ -368,7 +369,7 @@ mod test {
                 "test": 3,
             })],
         );
-        let response = ipc.send(req_id, request).await;
+        let response = ipc.send(req_id, request, None).await;
         let expected_response_json: serde_json::Value = json!({
             "test": "string1",
         });
