@@ -5,7 +5,7 @@ async fn main() -> web3::Result {
     let web3 = web3::Web3::new(web3::transports::Batch::new(http));
 
     let accounts = web3.eth().accounts();
-    let block = web3.eth().block_number();
+    let block = web3.eth().block_number(None);
 
     let result = web3.transport().submit_batch().await?;
     println!("Result: {:?}", result);

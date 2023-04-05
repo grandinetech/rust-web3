@@ -5,6 +5,7 @@ use futures::{
     future::{BoxFuture, FutureExt},
     stream::{BoxStream, StreamExt},
 };
+use headers::HeaderMap;
 
 /// A wrapper over two possible transports.
 ///
@@ -36,10 +37,10 @@ where
         }
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call) -> Self::Out {
+    fn send(&self, id: RequestId, request: rpc::Call, headers: Option<HeaderMap>) -> Self::Out {
         match *self {
-            Self::Left(ref a) => a.send(id, request).boxed(),
-            Self::Right(ref b) => b.send(id, request).boxed(),
+            Self::Left(ref a) => a.send(id, request, headers).boxed(),
+            Self::Right(ref b) => b.send(id, request, headers).boxed(),
         }
     }
 }
