@@ -9,6 +9,7 @@ use futures::{
     task::{Context, Poll},
     Future, FutureExt,
 };
+use headers::HeaderMap;
 use parking_lot::Mutex;
 use std::{collections::BTreeMap, pin::Pin, sync::Arc};
 
@@ -75,7 +76,7 @@ where
         self.transport.prepare(method, params)
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call) -> Self::Out {
+    fn send(&self, id: RequestId, request: rpc::Call, _headers: Option<HeaderMap>) -> Self::Out {
         let (tx, rx) = oneshot::channel();
         self.pending.lock().insert(id, tx);
         self.batch.lock().push((id, request));
