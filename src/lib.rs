@@ -11,6 +11,7 @@
 // select! in WS transport
 #![recursion_limit = "256"]
 
+use headers::HeaderMap;
 use jsonrpc_core as rpc;
 
 /// Re-export of the `futures` crate.
@@ -52,12 +53,18 @@ pub trait Transport: std::fmt::Debug + Clone {
     fn prepare(&self, method: &str, params: Vec<rpc::Value>) -> (RequestId, rpc::Call);
 
     /// Execute prepared RPC call.
-    fn send(&self, id: RequestId, request: rpc::Call) -> Self::Out;
+    fn send(&self, id: RequestId, request: rpc::Call, headers: Option<HeaderMap>) -> Self::Out;
 
     /// Execute remote method with given parameters.
     fn execute(&self, method: &str, params: Vec<rpc::Value>) -> Self::Out {
         let (id, request) = self.prepare(method, params);
-        self.send(id, request)
+        self.send(id, request, None)
+    }
+
+    /// Execute remote method with given parameters and headers.
+    fn execute_with_headers(&self, method: &str, params: Vec<rpc::Value>, headers: Option<HeaderMap>) -> Self::Out {
+        let (id, request) = self.prepare(method, params);
+        self.send(id, request, headers)
     }
 }
 
@@ -97,8 +104,8 @@ where
         (**self).prepare(method, params)
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call) -> Self::Out {
-        (**self).send(id, request)
+    fn send(&self, id: RequestId, request: rpc::Call, headers: Option<HeaderMap>) -> Self::Out {
+        (**self).send(id, request, headers)
     }
 }
 
@@ -143,6 +150,7 @@ mod tests {
 
     use crate::api::Web3;
     use futures::future::BoxFuture;
+    use headers::HeaderMap;
     use std::sync::Arc;
 
     #[derive(Debug, Clone)]
@@ -155,7 +163,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn send(&self, _id: RequestId, _request: rpc::Call) -> Self::Out {
+        fn send(&self, _id: RequestId, _request: rpc::Call, _headers: Option<HeaderMap>) -> Self::Out {
             unimplemented!()
         }
     }

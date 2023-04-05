@@ -55,7 +55,7 @@ where
     loop {
         let _ = filter_stream.next().await;
         if let Some(confirmation_block_number) = check.check().await? {
-            let block_number = eth.block_number().await?;
+            let block_number = eth.block_number(None).await?;
             if confirmation_block_number.low_u64() + confirmations as u64 <= block_number.low_u64() {
                 return Ok(());
             }

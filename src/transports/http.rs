@@ -8,6 +8,7 @@ use crate::{
 use futures::future::BoxFuture;
 #[cfg(feature = "wasm")]
 use futures::future::LocalBoxFuture as BoxFuture;
+use headers::HeaderMap;
 use jsonrpc_core::types::{Call, Output, Request, Value};
 use reqwest::{Client, Url};
 use serde::de::DeserializeOwned;
@@ -73,11 +74,21 @@ impl Http {
 }
 
 // Id is only used for logging.
-async fn execute_rpc<T: DeserializeOwned>(client: &Client, url: Url, request: &Request, id: RequestId) -> Result<T> {
+async fn execute_rpc<T: DeserializeOwned>(
+    client: &Client,
+    url: Url,
+    request: &Request,
+    id: RequestId,
+    headers: Option<HeaderMap>,
+) -> Result<T> {
     log::debug!("[id:{}] sending request: {:?}", id, serde_json::to_string(&request)?);
-    let response = client
-        .post(url)
-        .json(request)
+    let mut request_builder = client.post(url).json(request);
+
+    if let Some(headers) = headers {
+        request_builder = request_builder.headers(headers);
+    }
+
+    let response = request_builder
         .send()
         .await
         .map_err(|err| Error::Transport(TransportError::Message(format!("failed to send request: {}", err))))?;
@@ -116,10 +127,10 @@ impl Transport for Http {
         (id, request)
     }
 
-    fn send(&self, id: RequestId, call: Call) -> Self::Out {
+    fn send(&self, id: RequestId, call: Call, headers: Option<HeaderMap>) -> Self::Out {
         let (client, url) = self.new_request();
         Box::pin(async move {
-            let output: Output = execute_rpc(&client, url, &Request::Single(call), id).await?;
+            let output: Output = execute_rpc(&client, url, &Request::Single(call), id, headers).await?;
             helpers::to_result_from_output(output)
         })
     }
@@ -137,7 +148,7 @@ impl BatchTransport for Http {
         let (client, url) = self.new_request();
         let (ids, calls): (Vec<_>, Vec<_>) = requests.into_iter().unzip();
         Box::pin(async move {
-            let value = execute_rpc(&client, url, &Request::Batch(calls), id).await?;
+            let value = execute_rpc(&client, url, &Request::Batch(calls), id, None).await?;
             let outputs = handle_possible_error_object_for_batched_request(value)?;
             handle_batch_response(&ids, outputs)
         })

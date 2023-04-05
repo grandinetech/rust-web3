@@ -1,5 +1,7 @@
 //! `Eth` namespace
 
+use headers::HeaderMap;
+
 use crate::{
     api::Namespace,
     helpers::{self, CallFuture},
@@ -37,8 +39,8 @@ impl<T: Transport> Eth<T> {
     }
 
     /// Get current block number
-    pub fn block_number(&self) -> CallFuture<U64, T::Out> {
-        CallFuture::new(self.transport.execute("eth_blockNumber", vec![]))
+    pub fn block_number(&self, headers: Option<HeaderMap>) -> CallFuture<U64, T::Out> {
+        CallFuture::new(self.transport.execute_with_headers("eth_blockNumber", vec![], headers))
     }
 
     /// Call a constant method of contract without changing the state of the blockchain.
@@ -116,23 +118,28 @@ impl<T: Transport> Eth<T> {
     }
 
     /// Get all logs matching a given filter object
-    pub fn logs(&self, filter: Filter) -> CallFuture<Vec<Log>, T::Out> {
+    pub fn logs(&self, filter: Filter, headers: Option<HeaderMap>) -> CallFuture<Vec<Log>, T::Out> {
         let filter = helpers::serialize(&filter);
-        CallFuture::new(self.transport.execute("eth_getLogs", vec![filter]))
+        CallFuture::new(
+            self.transport
+                .execute_with_headers("eth_getLogs", vec![filter], headers),
+        )
     }
 
     /// Get block details with transaction hashes.
-    pub fn block(&self, block: BlockId) -> CallFuture<Option<Block<H256>>, T::Out> {
+    pub fn block(&self, block: BlockId, headers: Option<HeaderMap>) -> CallFuture<Option<Block<H256>>, T::Out> {
         let include_txs = helpers::serialize(&false);
 
         let result = match block {
             BlockId::Hash(hash) => {
                 let hash = helpers::serialize(&hash);
-                self.transport.execute("eth_getBlockByHash", vec![hash, include_txs])
+                self.transport
+                    .execute_with_headers("eth_getBlockByHash", vec![hash, include_txs], headers)
             }
             BlockId::Number(num) => {
                 let num = helpers::serialize(&num);
-                self.transport.execute("eth_getBlockByNumber", vec![num, include_txs])
+                self.transport
+                    .execute_with_headers("eth_getBlockByNumber", vec![num, include_txs], headers)
             }
         };
 
@@ -558,7 +565,7 @@ mod tests {
     );
 
     rpc_test! (
-      Eth:block_number => "eth_blockNumber";
+      Eth:block_number, None => "eth_blockNumber", Vec::<String>::new();
       Value::String("0x123".into()) => 0x123
     );
 
@@ -653,13 +660,13 @@ mod tests {
     );
 
     rpc_test! (
-      Eth:logs, FilterBuilder::default().build() => "eth_getLogs", vec!["{}"];
+      Eth:logs, FilterBuilder::default().build(), None => "eth_getLogs", vec!["{}"];
       Value::Array(vec![::serde_json::from_str(EXAMPLE_LOG).unwrap()])
       => vec![::serde_json::from_str::<Log>(EXAMPLE_LOG).unwrap()]
     );
 
     rpc_test! (
-      Eth:block:block_by_hash, BlockId::Hash(H256::from_low_u64_be(0x123))
+      Eth:block:block_by_hash, BlockId::Hash(H256::from_low_u64_be(0x123)), None
       =>
       "eth_getBlockByHash", vec![r#""0x0000000000000000000000000000000000000000000000000000000000000123""#, r#"false"#];
       ::serde_json::from_str(EXAMPLE_BLOCK).unwrap()
@@ -667,7 +674,7 @@ mod tests {
     );
 
     rpc_test! (
-      Eth:block, BlockNumber::Pending
+      Eth:block, BlockNumber::Pending, None
       =>
       "eth_getBlockByNumber", vec![r#""pending""#, r#"false"#];
       ::serde_json::from_str(EXAMPLE_PENDING_BLOCK).unwrap()
