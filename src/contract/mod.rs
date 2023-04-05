@@ -310,7 +310,7 @@ impl<T: Transport> Contract<T> {
 
         let logs = self
             .eth
-            .logs(FilterBuilder::default().topic_filter(filter).build())
+            .logs(FilterBuilder::default().topic_filter(filter).build(), None)
             .await?;
         logs.into_iter()
             .map(move |l| {

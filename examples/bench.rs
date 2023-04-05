@@ -30,7 +30,7 @@ where
     for _ in 0..max {
         let ticker = ticker.clone();
         ticker.start();
-        let accounts = web3.eth().block_number().then(move |res| {
+        let accounts = web3.eth().block_number(None).then(move |res| {
             if let Err(e) = res {
                 println!("Error: {:?}", e);
             }
