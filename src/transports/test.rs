@@ -6,7 +6,7 @@ use crate::{
 };
 use futures::future::{self, BoxFuture, FutureExt};
 use headers::HeaderMap;
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{cell::RefCell, collections::VecDeque, rc::Rc, time::Duration};
 
 type Result<T> = BoxFuture<'static, error::Result<T>>;
 
@@ -27,7 +27,13 @@ impl Transport for TestTransport {
         (self.requests.borrow().len(), request)
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call, _headers: Option<HeaderMap>) -> Result<rpc::Value> {
+    fn send(
+        &self,
+        id: RequestId,
+        request: rpc::Call,
+        _headers: Option<HeaderMap>,
+        _timeout: Option<Duration>,
+    ) -> Result<rpc::Value> {
         future::ready(match self.responses.borrow_mut().pop_front() {
             Some(response) => Ok(response),
             None => {

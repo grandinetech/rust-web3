@@ -11,7 +11,7 @@ use futures::{
 };
 use headers::HeaderMap;
 use parking_lot::Mutex;
-use std::{collections::BTreeMap, pin::Pin, sync::Arc};
+use std::{collections::BTreeMap, pin::Pin, sync::Arc, time::Duration};
 
 type Pending = oneshot::Sender<error::Result<rpc::Value>>;
 type PendingRequests = Arc<Mutex<BTreeMap<RequestId, Pending>>>;
@@ -76,7 +76,13 @@ where
         self.transport.prepare(method, params)
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call, _headers: Option<HeaderMap>) -> Self::Out {
+    fn send(
+        &self,
+        id: RequestId,
+        request: rpc::Call,
+        _headers: Option<HeaderMap>,
+        _timeout: Option<Duration>,
+    ) -> Self::Out {
         let (tx, rx) = oneshot::channel();
         self.pending.lock().insert(id, tx);
         self.batch.lock().push((id, request));

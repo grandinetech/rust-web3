@@ -1,5 +1,7 @@
 //! A strongly-typed transport alternative.
 
+use std::time::Duration;
+
 use crate::{api, error, rpc, BatchTransport, DuplexTransport, RequestId, Transport};
 use futures::{
     future::{BoxFuture, FutureExt},
@@ -37,10 +39,16 @@ where
         }
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call, headers: Option<HeaderMap>) -> Self::Out {
+    fn send(
+        &self,
+        id: RequestId,
+        request: rpc::Call,
+        headers: Option<HeaderMap>,
+        timeout: Option<Duration>,
+    ) -> Self::Out {
         match *self {
-            Self::Left(ref a) => a.send(id, request, headers).boxed(),
-            Self::Right(ref b) => b.send(id, request, headers).boxed(),
+            Self::Left(ref a) => a.send(id, request, headers, timeout).boxed(),
+            Self::Right(ref b) => b.send(id, request, headers, timeout).boxed(),
         }
     }
 }
