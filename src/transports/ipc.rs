@@ -16,6 +16,7 @@ use std::{
     pin::Pin,
     sync::{atomic::AtomicUsize, Arc},
     task::{Context, Poll},
+    time::Duration,
 };
 use tokio::{
     io::AsyncWriteExt,
@@ -64,7 +65,13 @@ impl Transport for Ipc {
         (id, request)
     }
 
-    fn send(&self, id: RequestId, call: rpc::Call, _headers: Option<HeaderMap>) -> Self::Out {
+    fn send(
+        &self,
+        id: RequestId,
+        call: rpc::Call,
+        _headers: Option<HeaderMap>,
+        _timeout: Option<Duration>,
+    ) -> Self::Out {
         let (response_tx, response_rx) = oneshot::channel();
         let message = TransportMessage::Single((id, call, response_tx));
 
@@ -357,7 +364,7 @@ mod test {
                 "test": -1,
             })],
         );
-        let response = ipc.send(req_id, request, None).await;
+        let response = ipc.send(req_id, request, None, None).await;
         let expected_response_json: serde_json::Value = json!({
             "test": 1,
         });
@@ -369,7 +376,7 @@ mod test {
                 "test": 3,
             })],
         );
-        let response = ipc.send(req_id, request, None).await;
+        let response = ipc.send(req_id, request, None, None).await;
         let expected_response_json: serde_json::Value = json!({
             "test": "string1",
         });

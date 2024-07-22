@@ -40,7 +40,10 @@ impl<T: Transport> Eth<T> {
 
     /// Get current block number
     pub fn block_number(&self, headers: Option<HeaderMap>) -> CallFuture<U64, T::Out> {
-        CallFuture::new(self.transport.execute_with_headers("eth_blockNumber", vec![], headers))
+        CallFuture::new(
+            self.transport
+                .execute_with_headers("eth_blockNumber", vec![], headers, None),
+        )
     }
 
     /// Call a constant method of contract without changing the state of the blockchain.
@@ -122,7 +125,7 @@ impl<T: Transport> Eth<T> {
         let filter = helpers::serialize(&filter);
         CallFuture::new(
             self.transport
-                .execute_with_headers("eth_getLogs", vec![filter], headers),
+                .execute_with_headers("eth_getLogs", vec![filter], headers, None),
         )
     }
 
@@ -134,12 +137,12 @@ impl<T: Transport> Eth<T> {
             BlockId::Hash(hash) => {
                 let hash = helpers::serialize(&hash);
                 self.transport
-                    .execute_with_headers("eth_getBlockByHash", vec![hash, include_txs], headers)
+                    .execute_with_headers("eth_getBlockByHash", vec![hash, include_txs], headers, None)
             }
             BlockId::Number(num) => {
                 let num = helpers::serialize(&num);
                 self.transport
-                    .execute_with_headers("eth_getBlockByNumber", vec![num, include_txs], headers)
+                    .execute_with_headers("eth_getBlockByNumber", vec![num, include_txs], headers, None)
             }
         };
 
