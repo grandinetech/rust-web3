@@ -18,6 +18,7 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
+    time::Duration,
 };
 
 /// HTTP Transport
@@ -80,12 +81,17 @@ async fn execute_rpc<T: DeserializeOwned>(
     request: &Request,
     id: RequestId,
     headers: Option<HeaderMap>,
+    timeout: Option<Duration>,
 ) -> Result<T> {
     log::debug!("[id:{}] sending request: {:?}", id, serde_json::to_string(&request)?);
     let mut request_builder = client.post(url).json(request);
 
     if let Some(headers) = headers {
         request_builder = request_builder.headers(headers);
+    }
+
+    if let Some(timeout) = timeout {
+        request_builder = request_builder.timeout(timeout);
     }
 
     let response = request_builder
@@ -127,10 +133,10 @@ impl Transport for Http {
         (id, request)
     }
 
-    fn send(&self, id: RequestId, call: Call, headers: Option<HeaderMap>) -> Self::Out {
+    fn send(&self, id: RequestId, call: Call, headers: Option<HeaderMap>, timeout: Option<Duration>) -> Self::Out {
         let (client, url) = self.new_request();
         Box::pin(async move {
-            let output: Output = execute_rpc(&client, url, &Request::Single(call), id, headers).await?;
+            let output: Output = execute_rpc(&client, url, &Request::Single(call), id, headers, timeout).await?;
             helpers::to_result_from_output(output)
         })
     }
@@ -148,7 +154,7 @@ impl BatchTransport for Http {
         let (client, url) = self.new_request();
         let (ids, calls): (Vec<_>, Vec<_>) = requests.into_iter().unzip();
         Box::pin(async move {
-            let value = execute_rpc(&client, url, &Request::Batch(calls), id, None).await?;
+            let value = execute_rpc(&client, url, &Request::Batch(calls), id, None, None).await?;
             let outputs = handle_possible_error_object_for_batched_request(value)?;
             handle_batch_response(&ids, outputs)
         })

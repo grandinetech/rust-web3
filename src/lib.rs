@@ -11,6 +11,8 @@
 // select! in WS transport
 #![recursion_limit = "256"]
 
+use std::time::Duration;
+
 use headers::HeaderMap;
 use jsonrpc_core as rpc;
 
@@ -53,18 +55,30 @@ pub trait Transport: std::fmt::Debug + Clone {
     fn prepare(&self, method: &str, params: Vec<rpc::Value>) -> (RequestId, rpc::Call);
 
     /// Execute prepared RPC call.
-    fn send(&self, id: RequestId, request: rpc::Call, headers: Option<HeaderMap>) -> Self::Out;
+    fn send(
+        &self,
+        id: RequestId,
+        request: rpc::Call,
+        headers: Option<HeaderMap>,
+        timeout: Option<Duration>,
+    ) -> Self::Out;
 
     /// Execute remote method with given parameters.
     fn execute(&self, method: &str, params: Vec<rpc::Value>) -> Self::Out {
         let (id, request) = self.prepare(method, params);
-        self.send(id, request, None)
+        self.send(id, request, None, None)
     }
 
     /// Execute remote method with given parameters and headers.
-    fn execute_with_headers(&self, method: &str, params: Vec<rpc::Value>, headers: Option<HeaderMap>) -> Self::Out {
+    fn execute_with_headers(
+        &self,
+        method: &str,
+        params: Vec<rpc::Value>,
+        headers: Option<HeaderMap>,
+        timeout: Option<Duration>,
+    ) -> Self::Out {
         let (id, request) = self.prepare(method, params);
-        self.send(id, request, headers)
+        self.send(id, request, headers, timeout)
     }
 }
 
@@ -104,8 +118,14 @@ where
         (**self).prepare(method, params)
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call, headers: Option<HeaderMap>) -> Self::Out {
-        (**self).send(id, request, headers)
+    fn send(
+        &self,
+        id: RequestId,
+        request: rpc::Call,
+        headers: Option<HeaderMap>,
+        timeout: Option<Duration>,
+    ) -> Self::Out {
+        (**self).send(id, request, headers, timeout)
     }
 }
 
@@ -151,7 +171,7 @@ mod tests {
     use crate::api::Web3;
     use futures::future::BoxFuture;
     use headers::HeaderMap;
-    use std::sync::Arc;
+    use std::{sync::Arc, time::Duration};
 
     #[derive(Debug, Clone)]
     struct FakeTransport;
@@ -163,7 +183,13 @@ mod tests {
             unimplemented!()
         }
 
-        fn send(&self, _id: RequestId, _request: rpc::Call, _headers: Option<HeaderMap>) -> Self::Out {
+        fn send(
+            &self,
+            _id: RequestId,
+            _request: rpc::Call,
+            _headers: Option<HeaderMap>,
+            _timeout: Option<Duration>,
+        ) -> Self::Out {
             unimplemented!()
         }
     }

@@ -21,7 +21,7 @@ use std::{
     fmt,
     marker::Unpin,
     pin::Pin,
-    sync::{atomic, Arc},
+    sync::{atomic, Arc}, time::Duration,
 };
 use url::Url;
 
@@ -474,7 +474,7 @@ impl Transport for WebSocket {
         (id, request)
     }
 
-    fn send(&self, id: RequestId, request: rpc::Call, _headers: Option<HeaderMap>) -> Self::Out {
+    fn send(&self, id: RequestId, request: rpc::Call, _headers: Option<HeaderMap>, _timeout: Option<Duration>) -> Self::Out {
         let response = self.send_request(id, rpc::Request::Single(request));
         Response::new(response, batch_to_single)
     }
