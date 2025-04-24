@@ -100,9 +100,14 @@ async fn execute_rpc<T: DeserializeOwned>(
         .map_err(|err| Error::Transport(TransportError::Message(format!("failed to send request: {}", err))))?;
     let status = response.status();
     let response = response.bytes().await.map_err(|err| {
+        let error_msg = if err.is_timeout() {
+            "request timed out"
+        } else {
+            &format!("{}", err)
+        };
+
         Error::Transport(TransportError::Message(format!(
-            "failed to read response bytes: {}",
-            err
+            "failed to read response bytes: {error_msg}",
         )))
     })?;
     log::debug!(
