@@ -35,7 +35,7 @@ once_cell = { version = "1.8.0", optional = true }
 ## HTTP
 base64 = { version = "0.22", optional = true }
 bytes = { version = "1.0", optional = true }
-reqwest = { version = "0.12", optional = true, default-features = false, features = ["json"] }
+reqwest = { version = "0.13", optional = true, default-features = false, features = ["json"] }
 headers = { version = "0.4", optional = true }
 ## WS
 # async-native-tls = { git = "https://github.com/async-email/async-native-tls.git", rev = "b5b5562d6cea77f913d4cbe448058c031833bf17", optional = true, default-features = false }
@@ -81,7 +81,8 @@ _http_base = ["reqwest", "bytes", "url", "base64", "headers"]
 http = ["_http_base"]
 http-tls = ["http", "reqwest/default-tls"]
 http-native-tls = ["http", "reqwest/native-tls"]
-http-rustls-tls = ["http", "reqwest/rustls-tls"]
+http-native-tls-vendored = ["http", "reqwest/native-tls-vendored"]
+http-rustls-tls = ["http", "reqwest/default-tls"]
 signing = ["secp256k1", "once_cell"]
 ws-tokio = ["soketto", "url", "tokio", "tokio-util", "headers"]
 ws-async-std = ["soketto", "url", "async-std", "headers"]
